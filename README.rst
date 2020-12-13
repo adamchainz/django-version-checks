@@ -71,11 +71,13 @@ Any mismatched versions are likely to cause import time problems, before django-
 To add checks on your Python dependencies, check out `pip-lock <https://github.com/adamchainz/pip-lock/>`__.
 
 Checks use the `PEP 440 specifier format <https://www.python.org/dev/peps/pep-0440/#id53>`__ via the ``packaging`` module.
-This is the same format used by pip, allowing you to specify flexible ranges.
-Each check is documented below.
+This is the same format used by pip, and allows some flexibility in specifying valid version ranges.
+The ``~=`` operator is particularly useful.
+For example, you can use ``~=3.9.1`` to mean “3.9.1+, but less than 3.10.0”, allowing environments to take on patch releases without changes, but nothing more.
 
-Each check ensures that its configuration has the expected type and valid specifiers.
-If not, it will show one of these system check errors:
+The individual checks are documented below.
+Each occupies a key in the ``VERSION_CHECKS`` dictionary, and documents its supported types for specifiers.
+If a check is misconfigured with a bad type or specifier you will see one of these system check errors:
 
 * ``dvc.E001``: ``<check>`` is misconfigured. Expected a ``<type>`` but got ``<value>``.
 * ``dvc.E002``: ``<check>`` is misconfigured. ``<value>`` is not a valid PEP440 specifier.
@@ -83,18 +85,44 @@ If not, it will show one of these system check errors:
 ``python`` check
 ----------------
 
-This check compares the current version of Python to the specified range.
-The range should be specified in a single string under the ``"python"`` key:
+This check compares the current version of Python to the given specifier, given as a string:
 
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "python": "~=3.9.1"  # 3.9.1+, but less than 3.10
+        "python": "~=3.9.1",
     }
 
 If this check fails, the system check will report:
 
 * ``dvc.E003``: The current version of Python (``<version>``) does not match the specified range (``<range>``).
+
+``postgresql`` check
+--------------------
+
+This check compares the current version of PostgreSQL to the given specifier.
+The range can specified either as a single string:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "postgresql": "~=12.2",
+    }
+
+...or as a dictionary mapping database aliases to their specifiers:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "postgresql": {
+            "default": "~=12.2",
+            "analytics": "~=13.1",
+        },
+    }
+
+If this check fails, the system check will report:
+
+* ``dvc.E004``: The current version of PostgreSQL (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).
 
 Example Upgrade
 ===============
@@ -102,7 +130,7 @@ Example Upgrade
 Let’s walk through using django-version-checks to upgrade Python from version 3.8 to 3.9.
 We have an infrastructure consisting of CI, staging, and production environments, and several developers’ development machines.
 
-First, we had a pre-existing check to ensure all environments are on Python 3.8:
+First, we add a pre-existing check to ensure that all environments are on Python 3.8:
 
 .. code-block:: python
 
