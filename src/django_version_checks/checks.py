@@ -9,9 +9,9 @@ from packaging.version import Version
 
 
 def check_everything(*, app_configs, **kwargs):
-    if django.VERSION >= (3, 1):  # pragma: no cover
+    if django.VERSION >= (3, 1):
         databases = set(kwargs["databases"])
-    else:  # pragma: no cover
+    else:
         databases = set(connections)
 
     if not settings.is_overridden("VERSION_CHECKS"):
