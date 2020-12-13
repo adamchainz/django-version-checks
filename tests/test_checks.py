@@ -127,6 +127,18 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
             + "not a valid PEP440 specifier."
         )
 
+    @override_settings(VERSION_CHECKS={"postgresql": {"default": "13.1"}})
+    def test_fail_bad_specifier_in_dict(self):
+        with fake_postgresql(pg_version=13_00_00):
+            errors = call_check_everything()
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E002"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['postgresql'] is misconfigured. '13.1' is "
+            + "not a valid PEP440 specifier."
+        )
+
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_success_no_postgresql_connections(self):
         errors = call_check_everything()
@@ -137,6 +149,13 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
     def test_success_in_range(self):
         with fake_postgresql(pg_version=13_02_00):
             errors = call_check_everything()
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
+    def test_success_not_asked_about(self):
+        with fake_postgresql(pg_version=13_02_00):
+            errors = call_check_everything(databases=["other"])
 
         assert errors == []
 
