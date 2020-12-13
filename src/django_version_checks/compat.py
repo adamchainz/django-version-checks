@@ -14,6 +14,7 @@ else:
     def database_check(func):
         @wraps(func)
         def wrapper(**kwargs):
-            return func(databases=list(connections), **kwargs)
+            kwargs.setdefault("databases", list(connections))
+            return func(**kwargs)
 
         return wrapper
