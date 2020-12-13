@@ -1,5 +1,6 @@
 black ; python_version == '3.9.*'
 check-manifest ; python_version == '3.9.*'
+coverage
 django
 docutils ; python_version == '3.9.*'
 flake8 ; python_version == '3.9.*'
@@ -11,7 +12,6 @@ packaging>=20.8
 pre-commit ; python_version == '3.9.*'
 pygments ; python_version == '3.9.*'
 pytest
-pytest-cov
 pytest-django
 pytest-randomly
 secretstorage ; python_version == '3.9.*' # required for twine on linux
