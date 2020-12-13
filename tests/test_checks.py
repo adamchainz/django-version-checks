@@ -117,6 +117,28 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
             + " Expected a str or dict[str, str] but got 13."
         )
 
+    @override_settings(VERSION_CHECKS={"postgresql": "13.1"})
+    def test_fail_bad_specifier(self):
+        errors = checks.check_postgresql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E002"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['postgresql'] is misconfigured. '13.1' is "
+            + "not a valid PEP440 specifier."
+        )
+
+    @override_settings(VERSION_CHECKS={"postgresql": {"default": "13.1"}})
+    def test_fail_bad_specifier_in_dict(self):
+        errors = checks.check_postgresql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E002"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['postgresql'] is misconfigured. '13.1' is "
+            + "not a valid PEP440 specifier."
+        )
+
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_fail_out_of_range(self):
         with fake_postgresql(pg_version=13_00_00):
@@ -128,30 +150,6 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
             "The current version of PostgreSQL (13.0.0) for the default"
             + " database connection does not match the specified range"
             + " (~=13.1)."
-        )
-
-    @override_settings(VERSION_CHECKS={"postgresql": "13.1"})
-    def test_fail_bad_specifier(self):
-        with fake_postgresql(pg_version=13_00_00):
-            errors = checks.check_postgresql_version(databases=["default"])
-
-        assert len(errors) == 1
-        assert errors[0].id == "dvc.E002"
-        assert errors[0].msg == (
-            "settings.VERSION_CHECKS['postgresql'] is misconfigured. '13.1' is "
-            + "not a valid PEP440 specifier."
-        )
-
-    @override_settings(VERSION_CHECKS={"postgresql": {"default": "13.1"}})
-    def test_fail_bad_specifier_in_dict(self):
-        with fake_postgresql(pg_version=13_00_00):
-            errors = checks.check_postgresql_version(databases=["default"])
-
-        assert len(errors) == 1
-        assert errors[0].id == "dvc.E002"
-        assert errors[0].msg == (
-            "settings.VERSION_CHECKS['postgresql'] is misconfigured. '13.1' is "
-            + "not a valid PEP440 specifier."
         )
 
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
@@ -191,5 +189,103 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={})
     def test_success_unspecified(self):
         errors = checks.check_postgresql_version(databases=["default"])
+
+        assert errors == []
+
+
+@contextmanager
+def fake_mysql(*, mysql_version):
+    mock_vendor = mock.patch.object(connection, "vendor", "mysql")
+    mock_mysql_version = mock.patch.object(
+        connection, "mysql_version", mysql_version, create=True
+    )
+    with mock_vendor, mock_mysql_version:
+        yield
+
+
+class CheckMysqlVersionTests(SimpleTestCase):
+    @override_settings(VERSION_CHECKS={"mysql": 10})
+    def test_fail_bad_type(self):
+        errors = checks.check_mysql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E001"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['mysql'] is misconfigured."
+            + " Expected a str or dict[str, str] but got 10."
+        )
+
+    @override_settings(VERSION_CHECKS={"mysql": "10.5.8"})
+    def test_fail_bad_specifier(self):
+        errors = checks.check_mysql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E002"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['mysql'] is misconfigured. '10.5.8' is "
+            + "not a valid PEP440 specifier."
+        )
+
+    @override_settings(VERSION_CHECKS={"mysql": {"default": "10.5.8"}})
+    def test_fail_bad_specifier_in_dict(self):
+        errors = checks.check_mysql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E002"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['mysql'] is misconfigured. '10.5.8' is "
+            + "not a valid PEP440 specifier."
+        )
+
+    @override_settings(VERSION_CHECKS={"mysql": "~=10.5.8"})
+    def test_fail_out_of_range(self):
+        with fake_mysql(mysql_version=(10, 5, 7)):
+            errors = checks.check_mysql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E005"
+        assert errors[0].msg == (
+            "The current version of MariaDB/MySQL (10.5.7) for the default"
+            + " database connection does not match the specified range"
+            + " (~=10.5.8)."
+        )
+
+    @override_settings(VERSION_CHECKS={"mysql": "~=10.5.8"})
+    def test_success_no_mysql_connections(self):
+        errors = checks.check_mysql_version(databases=["default"])
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={"mysql": "~=10.5.8"})
+    def test_success_in_range(self):
+        with fake_mysql(mysql_version=(10, 5, 9)):
+            errors = checks.check_mysql_version(databases=["default"])
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={"mysql": "~=10.5.8"})
+    def test_success_not_asked_about(self):
+        with fake_mysql(mysql_version=(10, 5, 7)):
+            errors = checks.check_mysql_version(databases=["other"])
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={"mysql": {"default": "~=10.5.8"}})
+    def test_success_in_range_specific_alias(self):
+        with fake_mysql(mysql_version=(10, 5, 8)):
+            errors = checks.check_mysql_version(databases=["default"])
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={"mysql": {"other": "~=10.5.8"}})
+    def test_success_specified_other_alias(self):
+        with fake_mysql(mysql_version=(10, 5, 7)):
+            errors = checks.check_mysql_version(databases=["default"])
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={})
+    def test_success_unspecified(self):
+        errors = checks.check_mysql_version(databases=["default"])
 
         assert errors == []
