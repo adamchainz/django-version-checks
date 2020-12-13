@@ -1,4 +1,5 @@
 import sys
+from functools import wraps
 
 import django
 from django.conf import settings
@@ -29,9 +30,18 @@ def check_everything(*, app_configs, **kwargs):
 
     errors = []
     if "python" in settings_dict:
-        errors.extend(check_python_version(settings_dict["python"]))
+        errors.extend(
+            check_python_version(
+                specifier=settings_dict["python"],
+            )
+        )
     if "postgresql" in settings_dict:
-        errors.extend(check_postgresql_version(settings_dict["postgresql"], databases))
+        errors.extend(
+            check_postgresql_version(
+                specifiers=settings_dict["postgresql"],
+                databases=databases,
+            )
+        )
 
     return errors
 
@@ -88,40 +98,67 @@ def check_python_version(specifier):
     return errors
 
 
-def check_postgresql_version(specifiers, databases):
-    postgresql_connections = {
-        alias: connections[alias]
-        for alias in connections
-        if connections[alias].vendor == "postgresql" and alias in databases
-    }
+class AnyDict:
+    def __init__(self, value):
+        self.value = value
 
-    if isinstance(specifiers, str):
-        specifiers = {alias: specifiers for alias in postgresql_connections}
-    elif (
-        isinstance(specifiers, dict)
-        and all(isinstance(a, str) for a in specifiers.keys())
-        and all(isinstance(s, str) for s in specifiers.values())
-    ):
-        pass
-    else:
-        return [
-            bad_type_error(
-                name="postgresql",
-                expected="str or dict[str, str]",
-                value=specifiers,
-            )
-        ]
+    def __contains__(self, key):
+        return True
 
+    def __getitem__(self, key):
+        return self.value
+
+
+def parse_specifier_dict(*, name):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(specifiers, *args, **kwargs):
+            if isinstance(specifiers, str):
+                try:
+                    specifier_set = SpecifierSet(specifiers)
+                except InvalidSpecifier:
+                    return [bad_specifier_error(name=name, value=specifiers)]
+                specifier_dict = AnyDict(specifier_set)
+            elif (
+                isinstance(specifiers, dict)
+                and all(isinstance(a, str) for a in specifiers.keys())
+                and all(isinstance(s, str) for s in specifiers.values())
+            ):
+                specifier_dict = {}
+                for alias, specifier in specifiers.items():
+                    try:
+                        specifier_set = SpecifierSet(specifier)
+                    except InvalidSpecifier:
+                        return [bad_specifier_error(name=name, value=specifier)]
+                    specifier_dict[alias] = specifier_set
+            else:
+                return [
+                    bad_type_error(
+                        name=name,
+                        expected="str or dict[str, str]",
+                        value=specifiers,
+                    )
+                ]
+
+            return func(specifier_dict, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+@parse_specifier_dict(name="postgresql")
+def check_postgresql_version(specifier_dict, databases):
     errors = []
-    for alias, connection in postgresql_connections.items():
-        if alias not in specifiers:
+    for alias in connections:
+        if alias not in databases:
             continue
-
-        specifier = specifiers[alias]
-        try:
-            specifier_set = SpecifierSet(specifier)
-        except InvalidSpecifier:
-            return [bad_specifier_error(name="postgresql", value=specifier)]
+        if alias not in specifier_dict:
+            continue
+        connection = connections[alias]
+        if connection.vendor != "postgresql":
+            continue
+        specifier_set = specifier_dict[alias]
 
         major = (connection.pg_version // 10_000) % 100
         minor = (connection.pg_version // 100) % 100
