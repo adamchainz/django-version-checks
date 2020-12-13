@@ -12,7 +12,7 @@ def check_everything(*, app_configs, **kwargs):
     if django.VERSION >= (3, 1):  # pragma: no cover
         databases = set(kwargs["databases"])
     else:  # pragma: no cover
-        databases = set(connections.keys())
+        databases = set(connections)
 
     if not settings.is_overridden("VERSION_CHECKS"):
         return []
