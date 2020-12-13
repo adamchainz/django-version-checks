@@ -1,49 +1,38 @@
 import sys
 from functools import wraps
 
-import django
 from django.conf import settings
 from django.core.checks import Error
 from django.db import connections
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
+from django_version_checks.compat import database_check
 
-def check_everything(*, app_configs, **kwargs):
-    if django.VERSION >= (3, 1):
-        databases = set(kwargs["databases"])
-    else:
-        databases = set(connections)
 
-    if not settings.is_overridden("VERSION_CHECKS"):
-        return []
-
-    settings_dict = settings.VERSION_CHECKS
-    if not isinstance(settings_dict, dict):
-        return [
-            bad_type_error(
-                name="",
-                expected="dict",
-                value=settings_dict,
-            )
-        ]
-
+def check_config(**kwargs):
     errors = []
-    if "python" in settings_dict:
-        errors.extend(
-            check_python_version(
-                specifier=settings_dict["python"],
+
+    if settings.is_overridden("VERSION_CHECKS"):
+        settings_dict = settings.VERSION_CHECKS
+        if not isinstance(settings_dict, dict):
+            errors.append(
+                bad_type_error(
+                    name="",
+                    expected="dict",
+                    value=settings_dict,
+                )
             )
-        )
-    if "postgresql" in settings_dict:
-        errors.extend(
-            check_postgresql_version(
-                specifiers=settings_dict["postgresql"],
-                databases=databases,
-            )
-        )
 
     return errors
+
+
+def get_config():
+    if not settings.is_overridden("VERSION_CHECKS"):
+        return {}
+    if isinstance(settings.VERSION_CHECKS, dict):
+        return settings.VERSION_CHECKS
+    return {}
 
 
 def bad_type_error(*, name, expected, value):
@@ -68,7 +57,11 @@ def bad_specifier_error(*, name, value):
     )
 
 
-def check_python_version(specifier):
+def check_python_version(**kwargs):
+    config = get_config()
+    if "python" not in config:
+        return []
+    specifier = config["python"]
     if not isinstance(specifier, str):
         return [bad_type_error(name="python", expected="str", value=specifier)]
 
@@ -112,7 +105,12 @@ class AnyDict:
 def parse_specifier_dict(*, name):
     def decorator(func):
         @wraps(func)
-        def wrapper(specifiers, *args, **kwargs):
+        def wrapper(**kwargs):
+            config = get_config()
+            if name not in config:
+                return []
+            specifiers = config[name]
+
             if isinstance(specifiers, str):
                 try:
                     specifier_set = SpecifierSet(specifiers)
@@ -140,15 +138,18 @@ def parse_specifier_dict(*, name):
                     )
                 ]
 
-            return func(specifier_dict, *args, **kwargs)
+            return func(specifier_dict, **kwargs)
 
         return wrapper
 
     return decorator
 
 
+@database_check
 @parse_specifier_dict(name="postgresql")
-def check_postgresql_version(specifier_dict, databases):
+def check_postgresql_version(specifier_dict, databases, **kwargs):
+    databases = set(databases)
+
     errors = []
     for alias in connections:
         if alias not in databases:

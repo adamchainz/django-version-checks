@@ -123,6 +123,9 @@ The range can specified either as a single string:
         },
     }
 
+Note: as a check that connects to your database, Django will only run this during ``migrate`` or when using ``check --database`` (Django 3.1+) / ``check --tags database`` (Django <3.1).
+See (`docs <https://docs.djangoproject.com/en/3.1/ref/checks/#builtin-tags>`__).
+
 If this check fails, the system check will report:
 
 * ``dvc.E004``: The current version of PostgreSQL (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).

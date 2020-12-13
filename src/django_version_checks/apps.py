@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 from django.core.checks import Tags, register
 
-from django_version_checks.checks import check_everything
+from django_version_checks import checks
 
 
 class DjangoVersionChecksAppConfig(AppConfig):
@@ -9,4 +9,6 @@ class DjangoVersionChecksAppConfig(AppConfig):
     verbose_name = "django-version-checks"
 
     def ready(self):
-        register(Tags.compatibility)(check_everything)
+        register(Tags.compatibility)(checks.check_config)
+        register(Tags.compatibility)(checks.check_python_version)
+        register(Tags.database)(checks.check_postgresql_version)

@@ -1,31 +1,21 @@
 from contextlib import contextmanager
 from unittest import mock
 
-import django
 from django.db import connection
 from django.test import SimpleTestCase, override_settings
 
-from django_version_checks.checks import check_everything
+from django_version_checks import checks
 
 
-def call_check_everything(databases=None):
-    if databases is None:
-        databases = ["default"]
-    if django.VERSION >= (3, 1):
-        return check_everything(app_configs=None, databases=databases)
-    else:
-        return check_everything(app_configs=None)
-
-
-class CheckEverythingTests(SimpleTestCase):
+class CheckConfigTests(SimpleTestCase):
     def test_success_no_setting(self):
-        errors = call_check_everything()
+        errors = checks.check_config()
 
         assert errors == []
 
     @override_settings(VERSION_CHECKS=[])
     def test_fail_bad_type(self):
-        errors = call_check_everything()
+        errors = checks.check_config()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E001"
@@ -36,15 +26,34 @@ class CheckEverythingTests(SimpleTestCase):
 
     @override_settings(VERSION_CHECKS={})
     def test_success_empty_dict(self):
-        errors = call_check_everything()
+        errors = checks.check_config()
 
         assert errors == []
+
+
+class GetConfigTests(SimpleTestCase):
+    def test_no_setting(self):
+        config = checks.get_config()
+
+        assert config == {}
+
+    @override_settings(VERSION_CHECKS={"something": "here"})
+    def test_setting(self):
+        config = checks.get_config()
+
+        assert config == {"something": "here"}
+
+    @override_settings(VERSION_CHECKS=["woops"])
+    def test_bad_setting(self):
+        config = checks.get_config()
+
+        assert config == {}
 
 
 class CheckPythonVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={"python": 3})
     def test_fail_bad_type(self):
-        errors = call_check_everything()
+        errors = checks.check_python_version()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E001"
@@ -55,7 +64,7 @@ class CheckPythonVersionTests(SimpleTestCase):
 
     @override_settings(VERSION_CHECKS={"python": "3"})
     def test_fail_bad_specifier(self):
-        errors = call_check_everything()
+        errors = checks.check_python_version()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E002"
@@ -66,7 +75,7 @@ class CheckPythonVersionTests(SimpleTestCase):
 
     @override_settings(VERSION_CHECKS={"python": "<1.0"})
     def test_fail_out_of_range(self):
-        errors = call_check_everything()
+        errors = checks.check_python_version()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E003"
@@ -75,7 +84,13 @@ class CheckPythonVersionTests(SimpleTestCase):
 
     @override_settings(VERSION_CHECKS={"python": ">=1.0"})
     def test_success_in_range(self):
-        errors = call_check_everything()
+        errors = checks.check_python_version()
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={})
+    def test_success_unspecified(self):
+        errors = checks.check_python_version()
 
         assert errors == []
 
@@ -93,7 +108,7 @@ def fake_postgresql(*, pg_version):
 class CheckPostgresqlVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={"postgresql": 13})
     def test_fail_bad_type(self):
-        errors = call_check_everything()
+        errors = checks.check_postgresql_version(databases=["default"])
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E001"
@@ -105,7 +120,7 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_fail_out_of_range(self):
         with fake_postgresql(pg_version=13_00_00):
-            errors = call_check_everything()
+            errors = checks.check_postgresql_version(databases=["default"])
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E004"
@@ -118,7 +133,7 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={"postgresql": "13.1"})
     def test_fail_bad_specifier(self):
         with fake_postgresql(pg_version=13_00_00):
-            errors = call_check_everything()
+            errors = checks.check_postgresql_version(databases=["default"])
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E002"
@@ -130,7 +145,7 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={"postgresql": {"default": "13.1"}})
     def test_fail_bad_specifier_in_dict(self):
         with fake_postgresql(pg_version=13_00_00):
-            errors = call_check_everything()
+            errors = checks.check_postgresql_version(databases=["default"])
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E002"
@@ -141,34 +156,40 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
 
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_success_no_postgresql_connections(self):
-        errors = call_check_everything()
+        errors = checks.check_postgresql_version(databases=["default"])
 
         assert errors == []
 
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_success_in_range(self):
         with fake_postgresql(pg_version=13_02_00):
-            errors = call_check_everything()
+            errors = checks.check_postgresql_version(databases=["default"])
 
         assert errors == []
 
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_success_not_asked_about(self):
         with fake_postgresql(pg_version=13_02_00):
-            errors = call_check_everything(databases=["other"])
+            errors = checks.check_postgresql_version(databases=["other"])
 
         assert errors == []
 
     @override_settings(VERSION_CHECKS={"postgresql": {"default": "~=13.1"}})
     def test_success_in_range_specific_alias(self):
         with fake_postgresql(pg_version=13_02_00):
-            errors = call_check_everything()
+            errors = checks.check_postgresql_version(databases=["default"])
 
         assert errors == []
 
     @override_settings(VERSION_CHECKS={"postgresql": {"other": "~=13.1"}})
     def test_success_specified_other_alias(self):
         with fake_postgresql(pg_version=13_00_00):
-            errors = call_check_everything()
+            errors = checks.check_postgresql_version(databases=["default"])
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={})
+    def test_success_unspecified(self):
+        errors = checks.check_postgresql_version(databases=["default"])
 
         assert errors == []
