@@ -34,9 +34,9 @@ class CheckPythonVersionTests(SimpleTestCase):
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E001"
-        assert (
-            errors[0].msg
-            == "settings.VERSION_CHECKS['python'] is misconfigured. Expected a str but got 3."
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['python'] is misconfigured. Expected "
+            + "a str but got 3."
         )
 
     @override_settings(VERSION_CHECKS={"python": "3"})
@@ -45,9 +45,9 @@ class CheckPythonVersionTests(SimpleTestCase):
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E002"
-        assert (
-            errors[0].msg
-            == "settings.VERSION_CHECKS['python'] is misconfigured. '3' is not a valid PEP440 specifier."
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['python'] is misconfigured. '3' is "
+            + "not a valid PEP440 specifier."
         )
 
     @override_settings(VERSION_CHECKS={"python": "<1.0"})

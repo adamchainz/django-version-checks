@@ -32,7 +32,10 @@ def bad_type_error(*, name, expected, value):
         label += f"[{name!r}]"
     return Error(
         id="dvc.E001",
-        msg=f"{label} is misconfigured. Expected a {expected.__name__} but got {value!r}.",
+        msg=(
+            f"{label} is misconfigured. Expected a {expected.__name__} but got"
+            + f" {value!r}."
+        ),
     )
 
 
