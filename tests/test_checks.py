@@ -172,6 +172,13 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
 
         assert errors == []
 
+    @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
+    def test_success_databases_none(self):
+        with fake_postgresql(pg_version=13_02_00):
+            errors = checks.check_postgresql_version(databases=None)
+
+        assert errors == []
+
     @override_settings(VERSION_CHECKS={"postgresql": {"default": "~=13.1"}})
     def test_success_in_range_specific_alias(self):
         with fake_postgresql(pg_version=13_02_00):
