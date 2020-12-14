@@ -10,10 +10,7 @@ if django.VERSION >= (3, 1):
 
 else:
 
-    def database_check(func):
-        @wrapt.decorator
-        def wrapper(wrapped, instance, args, kwargs):
-            kwargs.setdefault("databases", list(connections))
-            return wrapped(*args, **kwargs)
-
-        return wrapper
+    @wrapt.decorator
+    def database_check(wrapped, instance, args, kwargs):
+        kwargs.setdefault("databases", list(connections))
+        return wrapped(*args, **kwargs)
