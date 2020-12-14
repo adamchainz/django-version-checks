@@ -13,3 +13,4 @@ class DjangoVersionChecksAppConfig(AppConfig):
         register(Tags.compatibility)(checks.check_python_version)
         register(Tags.database)(checks.check_postgresql_version)
         register(Tags.database)(checks.check_mysql_version)
+        register(Tags.database)(checks.check_sqlite_version)

@@ -289,3 +289,48 @@ class CheckMysqlVersionTests(SimpleTestCase):
         errors = checks.check_mysql_version(databases=["default"])
 
         assert errors == []
+
+
+class CheckSqliteVersionTests(SimpleTestCase):
+    @override_settings(VERSION_CHECKS={"sqlite": 3})
+    def test_fail_bad_type(self):
+        errors = checks.check_sqlite_version()
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E001"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['sqlite'] is misconfigured. Expected "
+            + "a str but got 3."
+        )
+
+    @override_settings(VERSION_CHECKS={"sqlite": "3"})
+    def test_fail_bad_specifier(self):
+        errors = checks.check_sqlite_version()
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E002"
+        assert errors[0].msg == (
+            "settings.VERSION_CHECKS['sqlite'] is misconfigured. '3' is "
+            + "not a valid PEP440 specifier."
+        )
+
+    @override_settings(VERSION_CHECKS={"sqlite": "<1.0"})
+    def test_fail_out_of_range(self):
+        errors = checks.check_sqlite_version()
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E006"
+        assert errors[0].msg.startswith("The current version of SQLite ")
+        assert errors[0].msg.endswith("does not match the specified range (<1.0).")
+
+    @override_settings(VERSION_CHECKS={"sqlite": ">=3.0"})
+    def test_success_in_range(self):
+        errors = checks.check_sqlite_version()
+
+        assert errors == []
+
+    @override_settings(VERSION_CHECKS={})
+    def test_success_unspecified(self):
+        errors = checks.check_sqlite_version()
+
+        assert errors == []
