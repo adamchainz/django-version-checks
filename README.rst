@@ -85,6 +85,36 @@ If a check is misconfigured with a bad type or specifier you will see one of the
 * ``dvc.E001``: ``<check>`` is misconfigured. Expected a ``<type>`` but got ``<value>``.
 * ``dvc.E002``: ``<check>`` is misconfigured. ``<value>`` is not a valid PEP440 specifier.
 
+``mysql`` check
+----------------
+
+This check compares the current version of MariaDB/MySQL to the given specifier.
+The range can specified either as a single string:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "mysql": "~=10.5.8",
+    }
+
+...or as a dictionary mapping database aliases to their specifiers:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "postgresql": {
+            "default": "~=10.5.8",
+            "analytics": "~=10.4.17",
+        },
+    }
+
+Note: as a check that connects to your database, Django will only run this during ``migrate`` or when using ``check --database`` (Django 3.1+) / ``check --tags database`` (Django <3.1).
+See (`docs <https://docs.djangoproject.com/en/3.1/ref/checks/#builtin-tags>`__).
+
+If this check fails, the system check will report:
+
+* ``dvc.E005``: The current version of MariaDB/MySQL (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).
+
 ``python`` check
 ----------------
 

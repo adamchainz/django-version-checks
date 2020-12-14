@@ -180,3 +180,38 @@ def check_postgresql_version(specifier_dict, databases, **kwargs):
             )
 
     return errors
+
+
+@database_check
+@parse_specifier_dict(name="mysql")
+def check_mysql_version(specifier_dict, databases, **kwargs):
+    databases = set(databases)
+
+    errors = []
+    for alias in connections:
+        if alias not in databases:
+            continue
+        if alias not in specifier_dict:
+            continue
+        connection = connections[alias]
+        if connection.vendor != "mysql":
+            continue
+        specifier_set = specifier_dict[alias]
+
+        version_string = ".".join(str(i) for i in connection.mysql_version)
+        mysql_version = Version(version_string)
+
+        if mysql_version not in specifier_set:
+            errors.append(
+                Error(
+                    id="dvc.E005",
+                    msg=(
+                        "The current version of MariaDB/MySQL"
+                        + f" ({version_string}) for the {alias} database"
+                        + " connection does not match the specified range"
+                        + f" ({specifier_set})."
+                    ),
+                )
+            )
+
+    return errors
