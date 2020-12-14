@@ -126,7 +126,11 @@ def parse_specifier_str_or_dict(*, name):
 
 
 def db_connections_matching(databases, vendor):
-    databases = set(databases)
+    if databases is None:
+        databases = set()
+    else:
+        databases = set(databases)
+
     for alias in connections:
         if alias not in databases:
             continue
