@@ -160,6 +160,36 @@ If this check fails, the system check will report:
 
 * ``dvc.E004``: The current version of PostgreSQL (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).
 
+``sqlite`` check
+--------------------
+
+This check compares the current version of SQLite to the given specifier.
+The range can specified either as a single string:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "sqlite": "~=12.2",
+    }
+
+...or as a dictionary mapping database aliases to their specifiers:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "sqlite": {
+            "default": "~=12.2",
+            "analytics": "~=13.1",
+        },
+    }
+
+Note: as a check that connects to your database, Django will only run this during ``migrate`` or when using ``check --database`` (Django 3.1+) / ``check --tags database`` (Django <3.1).
+See (`docs <https://docs.djangoproject.com/en/3.1/ref/checks/#builtin-tags>`__).
+
+If this check fails, the system check will report:
+
+* ``dvc.E006``: The current version of SQLite (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).
+
 Example Upgrade
 ===============
 

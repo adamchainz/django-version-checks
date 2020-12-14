@@ -145,21 +145,26 @@ def parse_specifier_dict(*, name):
     return decorator
 
 
-@database_check
-@parse_specifier_dict(name="postgresql")
-def check_postgresql_version(specifier_dict, databases, **kwargs):
+def db_connections_matching(databases, vendor):
     databases = set(databases)
-
-    errors = []
     for alias in connections:
         if alias not in databases:
             continue
-        if alias not in specifier_dict:
-            continue
         connection = connections[alias]
-        if connection.vendor != "postgresql":
+        if connection.vendor != vendor:
             continue
-        specifier_set = specifier_dict[alias]
+        yield alias, connection
+
+
+@database_check
+@parse_specifier_dict(name="postgresql")
+def check_postgresql_version(specifier_dict, databases, **kwargs):
+    errors = []
+    for alias, connection in db_connections_matching(databases, "postgresql"):
+        try:
+            specifier_set = specifier_dict[alias]
+        except KeyError:
+            continue
 
         major = (connection.pg_version // 10_000) % 100
         minor = (connection.pg_version // 100) % 100
@@ -185,18 +190,13 @@ def check_postgresql_version(specifier_dict, databases, **kwargs):
 @database_check
 @parse_specifier_dict(name="mysql")
 def check_mysql_version(specifier_dict, databases, **kwargs):
-    databases = set(databases)
-
     errors = []
-    for alias in connections:
-        if alias not in databases:
+    errors = []
+    for alias, connection in db_connections_matching(databases, "mysql"):
+        try:
+            specifier_set = specifier_dict[alias]
+        except KeyError:
             continue
-        if alias not in specifier_dict:
-            continue
-        connection = connections[alias]
-        if connection.vendor != "mysql":
-            continue
-        specifier_set = specifier_dict[alias]
 
         version_string = ".".join(str(i) for i in connection.mysql_version)
         mysql_version = Version(version_string)
@@ -210,6 +210,36 @@ def check_mysql_version(specifier_dict, databases, **kwargs):
                         + f" ({version_string}) for the {alias} database"
                         + " connection does not match the specified range"
                         + f" ({specifier_set})."
+                    ),
+                )
+            )
+
+    return errors
+
+
+@database_check
+@parse_specifier_dict(name="sqlite")
+def check_sqlite_version(specifier_dict, databases, **kwargs):
+    errors = []
+    for alias, connection in db_connections_matching(databases, "sqlite"):
+        try:
+            specifier_set = specifier_dict[alias]
+        except KeyError:
+            continue
+
+        version_string = ".".join(
+            str(i) for i in connection.Database.sqlite_version_info
+        )
+        sqlite_version = Version(version_string)
+
+        if sqlite_version not in specifier_set:
+            errors.append(
+                Error(
+                    id="dvc.E006",
+                    msg=(
+                        f"The current version of SQLite ({version_string}) for"
+                        + f" the {alias} database connection does not match"
+                        + f" the specified range ({specifier_set})."
                     ),
                 )
             )
