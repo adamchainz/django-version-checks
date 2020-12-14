@@ -57,52 +57,38 @@ def bad_specifier_error(*, name, value):
     )
 
 
-def check_python_version(**kwargs):
-    config = get_config()
-    if "python" not in config:
-        return []
-    specifier = config["python"]
-    if not isinstance(specifier, str):
-        return [bad_type_error(name="python", expected="str", value=specifier)]
+def parse_specifier_str(*, name):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(**kwargs):
+            config = get_config()
+            if name not in config:
+                return []
+            specifier = config[name]
+            if not isinstance(specifier, str):
+                return [bad_type_error(name=name, expected="str", value=specifier)]
 
-    try:
-        specifier_set = SpecifierSet(specifier)
-    except InvalidSpecifier:
-        return [bad_specifier_error(name="python", value=specifier)]
+            try:
+                specifier_set = SpecifierSet(specifier)
+            except InvalidSpecifier:
+                return [bad_specifier_error(name=name, value=specifier)]
 
-    version_string = (
-        f"{sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
-    )
-    current_version = Version(version_string)
+            return func(specifier_set, **kwargs)
 
-    errors = []
+        return wrapper
 
-    if current_version not in specifier_set:
-        errors.append(
-            Error(
-                id="dvc.E003",
-                msg=(
-                    f"The current version of Python ({version_string}) does"
-                    + f" not match the specified range ({specifier_set})."
-                ),
-            )
-        )
-
-    return errors
+    return decorator
 
 
 class AnyDict:
     def __init__(self, value):
         self.value = value
 
-    def __contains__(self, key):
-        return True
-
     def __getitem__(self, key):
         return self.value
 
 
-def parse_specifier_dict(*, name):
+def parse_specifier_str_or_dict(*, name):
     def decorator(func):
         @wraps(func)
         def wrapper(**kwargs):
@@ -156,8 +142,31 @@ def db_connections_matching(databases, vendor):
         yield alias, connection
 
 
+@parse_specifier_str(name="python")
+def check_python_version(specifier_set, **kwargs):
+    errors = []
+
+    version_string = (
+        f"{sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
+    )
+    current_version = Version(version_string)
+
+    if current_version not in specifier_set:
+        errors.append(
+            Error(
+                id="dvc.E003",
+                msg=(
+                    f"The current version of Python ({version_string}) does"
+                    + f" not match the specified range ({specifier_set})."
+                ),
+            )
+        )
+
+    return errors
+
+
 @database_check
-@parse_specifier_dict(name="postgresql")
+@parse_specifier_str_or_dict(name="postgresql")
 def check_postgresql_version(specifier_dict, databases, **kwargs):
     errors = []
     for alias, connection in db_connections_matching(databases, "postgresql"):
@@ -188,7 +197,7 @@ def check_postgresql_version(specifier_dict, databases, **kwargs):
 
 
 @database_check
-@parse_specifier_dict(name="mysql")
+@parse_specifier_str_or_dict(name="mysql")
 def check_mysql_version(specifier_dict, databases, **kwargs):
     errors = []
     errors = []
@@ -217,31 +226,24 @@ def check_mysql_version(specifier_dict, databases, **kwargs):
     return errors
 
 
-@database_check
-@parse_specifier_dict(name="sqlite")
-def check_sqlite_version(specifier_dict, databases, **kwargs):
+@parse_specifier_str(name="sqlite")
+def check_sqlite_version(specifier_set, **kwargs):
+    from sqlite3.dbapi2 import sqlite_version_info
+
     errors = []
-    for alias, connection in db_connections_matching(databases, "sqlite"):
-        try:
-            specifier_set = specifier_dict[alias]
-        except KeyError:
-            continue
 
-        version_string = ".".join(
-            str(i) for i in connection.Database.sqlite_version_info
-        )
-        sqlite_version = Version(version_string)
+    version_string = ".".join(str(i) for i in sqlite_version_info)
+    sqlite_version = Version(version_string)
 
-        if sqlite_version not in specifier_set:
-            errors.append(
-                Error(
-                    id="dvc.E006",
-                    msg=(
-                        f"The current version of SQLite ({version_string}) for"
-                        + f" the {alias} database connection does not match"
-                        + f" the specified range ({specifier_set})."
-                    ),
-                )
+    if sqlite_version not in specifier_set:
+        errors.append(
+            Error(
+                id="dvc.E006",
+                msg=(
+                    f"The current version of SQLite ({version_string}) does"
+                    + f" not match the specified range ({specifier_set})."
+                ),
             )
+        )
 
     return errors

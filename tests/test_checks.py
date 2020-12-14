@@ -291,92 +291,46 @@ class CheckMysqlVersionTests(SimpleTestCase):
         assert errors == []
 
 
-@contextmanager
-def fake_sqlite(*, sqlite_version):
-    mock_sqlite_version = mock.patch.object(
-        connection.Database, "sqlite_version_info", sqlite_version
-    )
-    with mock_sqlite_version:
-        yield
-
-
 class CheckSqliteVersionTests(SimpleTestCase):
     @override_settings(VERSION_CHECKS={"sqlite": 3})
     def test_fail_bad_type(self):
-        errors = checks.check_sqlite_version(databases=["default"])
+        errors = checks.check_sqlite_version()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E001"
         assert errors[0].msg == (
-            "settings.VERSION_CHECKS['sqlite'] is misconfigured."
-            + " Expected a str or dict[str, str] but got 3."
+            "settings.VERSION_CHECKS['sqlite'] is misconfigured. Expected "
+            + "a str but got 3."
         )
 
-    @override_settings(VERSION_CHECKS={"sqlite": "3.28.0"})
+    @override_settings(VERSION_CHECKS={"sqlite": "3"})
     def test_fail_bad_specifier(self):
-        errors = checks.check_sqlite_version(databases=["default"])
+        errors = checks.check_sqlite_version()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E002"
         assert errors[0].msg == (
-            "settings.VERSION_CHECKS['sqlite'] is misconfigured. '3.28.0' is "
+            "settings.VERSION_CHECKS['sqlite'] is misconfigured. '3' is "
             + "not a valid PEP440 specifier."
         )
 
-    @override_settings(VERSION_CHECKS={"sqlite": {"default": "3.28.0"}})
-    def test_fail_bad_specifier_in_dict(self):
-        errors = checks.check_sqlite_version(databases=["default"])
-
-        assert len(errors) == 1
-        assert errors[0].id == "dvc.E002"
-        assert errors[0].msg == (
-            "settings.VERSION_CHECKS['sqlite'] is misconfigured. '3.28.0' is "
-            + "not a valid PEP440 specifier."
-        )
-
-    @override_settings(VERSION_CHECKS={"sqlite": "~=3.28.0"})
+    @override_settings(VERSION_CHECKS={"sqlite": "<1.0"})
     def test_fail_out_of_range(self):
-        with fake_sqlite(sqlite_version=(3, 27, 0)):
-            errors = checks.check_sqlite_version(databases=["default"])
+        errors = checks.check_sqlite_version()
 
         assert len(errors) == 1
         assert errors[0].id == "dvc.E006"
-        assert errors[0].msg == (
-            "The current version of SQLite (3.27.0) for the default"
-            + " database connection does not match the specified range"
-            + " (~=3.28.0)."
-        )
+        assert errors[0].msg.startswith("The current version of SQLite ")
+        assert errors[0].msg.endswith("does not match the specified range (<1.0).")
 
-    @override_settings(VERSION_CHECKS={"sqlite": "~=3.28.0"})
+    @override_settings(VERSION_CHECKS={"sqlite": ">=3.0"})
     def test_success_in_range(self):
-        with fake_sqlite(sqlite_version=(3, 28, 1)):
-            errors = checks.check_sqlite_version(databases=["default"])
-
-        assert errors == []
-
-    @override_settings(VERSION_CHECKS={"sqlite": "~=3.28.0"})
-    def test_success_not_asked_about(self):
-        with fake_sqlite(sqlite_version=(3, 27, 0)):
-            errors = checks.check_sqlite_version(databases=["other"])
-
-        assert errors == []
-
-    @override_settings(VERSION_CHECKS={"sqlite": {"default": "~=3.28.0"}})
-    def test_success_in_range_specific_alias(self):
-        with fake_sqlite(sqlite_version=(3, 28, 0)):
-            errors = checks.check_sqlite_version(databases=["default"])
-
-        assert errors == []
-
-    @override_settings(VERSION_CHECKS={"sqlite": {"other": "~=3.28.0"}})
-    def test_success_specified_other_alias(self):
-        with fake_sqlite(sqlite_version=(3, 27, 0)):
-            errors = checks.check_sqlite_version(databases=["default"])
+        errors = checks.check_sqlite_version()
 
         assert errors == []
 
     @override_settings(VERSION_CHECKS={})
     def test_success_unspecified(self):
-        errors = checks.check_sqlite_version(databases=["default"])
+        errors = checks.check_sqlite_version()
 
         assert errors == []
