@@ -16,3 +16,4 @@ pytest-django
 pytest-randomly
 secretstorage ; python_version == '3.9.*' # required for twine on linux
 twine ; python_version == '3.9.*'
+wrapt>=1.12.1
