@@ -1,6 +1,6 @@
 import sys
+from functools import wraps
 
-import wrapt
 from django.conf import settings
 from django.core.checks import Error
 from django.db import connections
@@ -58,23 +58,26 @@ def bad_specifier_error(*, name, value):
 
 
 def parse_specifier_str(*, name):
-    @wrapt.decorator
-    def wrapper(wrapped, instance, args, kwargs):
-        config = get_config()
-        if name not in config:
-            return []
-        specifier = config[name]
-        if not isinstance(specifier, str):
-            return [bad_type_error(name=name, expected="str", value=specifier)]
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            config = get_config()
+            if name not in config:
+                return []
+            specifier = config[name]
+            if not isinstance(specifier, str):
+                return [bad_type_error(name=name, expected="str", value=specifier)]
 
-        try:
-            specifier_set = SpecifierSet(specifier)
-        except InvalidSpecifier:
-            return [bad_specifier_error(name=name, value=specifier)]
+            try:
+                specifier_set = SpecifierSet(specifier)
+            except InvalidSpecifier:
+                return [bad_specifier_error(name=name, value=specifier)]
 
-        return wrapped(specifier_set, *args, **kwargs)
+            return func(specifier_set, *args, **kwargs)
 
-    return wrapper
+        return wrapper
+
+    return decorator
 
 
 class AnyDict:
@@ -86,43 +89,47 @@ class AnyDict:
 
 
 def parse_specifier_str_or_dict(*, name):
-    @wrapt.decorator
-    def wrapper(wrapped, instance, args, kwargs):
-        config = get_config()
-        if name not in config:
-            return []
-        specifiers = config[name]
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
 
-        if isinstance(specifiers, str):
-            try:
-                specifier_set = SpecifierSet(specifiers)
-            except InvalidSpecifier:
-                return [bad_specifier_error(name=name, value=specifiers)]
-            specifier_dict = AnyDict(specifier_set)
-        elif (
-            isinstance(specifiers, dict)
-            and all(isinstance(a, str) for a in specifiers.keys())
-            and all(isinstance(s, str) for s in specifiers.values())
-        ):
-            specifier_dict = {}
-            for alias, specifier in specifiers.items():
+            config = get_config()
+            if name not in config:
+                return []
+            specifiers = config[name]
+
+            if isinstance(specifiers, str):
                 try:
-                    specifier_set = SpecifierSet(specifier)
+                    specifier_set = SpecifierSet(specifiers)
                 except InvalidSpecifier:
-                    return [bad_specifier_error(name=name, value=specifier)]
-                specifier_dict[alias] = specifier_set
-        else:
-            return [
-                bad_type_error(
-                    name=name,
-                    expected="str or dict[str, str]",
-                    value=specifiers,
-                )
-            ]
+                    return [bad_specifier_error(name=name, value=specifiers)]
+                specifier_dict = AnyDict(specifier_set)
+            elif (
+                isinstance(specifiers, dict)
+                and all(isinstance(a, str) for a in specifiers.keys())
+                and all(isinstance(s, str) for s in specifiers.values())
+            ):
+                specifier_dict = {}
+                for alias, specifier in specifiers.items():
+                    try:
+                        specifier_set = SpecifierSet(specifier)
+                    except InvalidSpecifier:
+                        return [bad_specifier_error(name=name, value=specifier)]
+                    specifier_dict[alias] = specifier_set
+            else:
+                return [
+                    bad_type_error(
+                        name=name,
+                        expected="str or dict[str, str]",
+                        value=specifiers,
+                    )
+                ]
 
-        return wrapped(specifier_dict, *args, **kwargs)
+            return func(specifier_dict, *args, **kwargs)
 
-    return wrapper
+        return wrapper
+
+    return decorator
 
 
 def db_connections_matching(databases, vendor):

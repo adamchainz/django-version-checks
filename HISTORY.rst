@@ -2,6 +2,8 @@
 History
 =======
 
+* Remove dependency on wrapt.
+
 1.0.1 (2020-12-14)
 ------------------
 

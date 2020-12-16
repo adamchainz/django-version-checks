@@ -1,5 +1,6 @@
+from functools import wraps
+
 import django
-import wrapt
 from django.db import connections
 
 if django.VERSION >= (3, 1):
@@ -10,7 +11,10 @@ if django.VERSION >= (3, 1):
 
 else:
 
-    @wrapt.decorator
-    def database_check(wrapped, instance, args, kwargs):
-        kwargs.setdefault("databases", list(connections))
-        return wrapped(*args, **kwargs)
+    def database_check(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            kwargs.setdefault("databases", list(connections))
+            return func(*args, **kwargs)
+
+        return wrapper
