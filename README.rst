@@ -65,6 +65,8 @@ For example:
 Usage
 =====
 
+See also the `introductory blog post <https://adamj.eu/tech/2020/12/14/introducing-django-version-checks/>`__.
+
 django-version-checks adds several `system checks <https://docs.djangoproject.com/en/stable/topics/checks/>`__ that can help ensure that the current environment has the right versions of Python, databases, etc.
 This is useful when coordinating upgrades across all your infrastructure.
 
