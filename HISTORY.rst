@@ -2,6 +2,9 @@
 History
 =======
 
+1.0.3 (2021-01-04)
+------------------
+
 * Fix construction of PostgreSQL version from its integer form so that e.g.
   ``10.1`` is not parsed as ``10.0.1``.
 
