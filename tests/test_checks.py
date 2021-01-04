@@ -140,6 +140,19 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
         )
 
     @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
+    def test_old_version_out_of_range(self):
+        with fake_postgresql(pg_version=9_01_05):
+            errors = checks.check_postgresql_version(databases=["default"])
+
+        assert len(errors) == 1
+        assert errors[0].id == "dvc.E004"
+        assert errors[0].msg == (
+            "The current version of PostgreSQL (9.1.5) for the default"
+            + " database connection does not match the specified range"
+            + " (~=13.1)."
+        )
+
+    @override_settings(VERSION_CHECKS={"postgresql": "~=13.1"})
     def test_fail_out_of_range(self):
         with fake_postgresql(pg_version=13_00_00):
             errors = checks.check_postgresql_version(databases=["default"])
@@ -147,7 +160,7 @@ class CheckPostgresqlVersionTests(SimpleTestCase):
         assert len(errors) == 1
         assert errors[0].id == "dvc.E004"
         assert errors[0].msg == (
-            "The current version of PostgreSQL (13.0.0) for the default"
+            "The current version of PostgreSQL (13.0) for the default"
             + " database connection does not match the specified range"
             + " (~=13.1)."
         )

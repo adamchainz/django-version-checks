@@ -2,6 +2,11 @@
 History
 =======
 
+* Fix construction of PostgreSQL version from its integer form so that e.g.
+  ``10.1`` is not parsed as ``10.0.1``.
+
+  `Issue #24 <https://github.com/adamchainz/django-version-checks/issues/24>`__.
+
 1.0.2 (2020-12-16)
 ------------------
 

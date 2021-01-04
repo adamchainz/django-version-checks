@@ -180,10 +180,16 @@ def check_postgresql_version(specifier_dict, databases, **kwargs):
         except KeyError:
             continue
 
-        major = (connection.pg_version // 10_000) % 100
-        minor = (connection.pg_version // 100) % 100
-        patch = connection.pg_version % 100
-        version_string = f"{major}.{minor}.{patch}"
+        # See: https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION  # noqa: B950
+        pg_version = connection.pg_version
+        major = (pg_version // 10_000) % 100
+        if major < 10:
+            minor = (pg_version // 100) % 100
+            patch = pg_version % 100
+            version_string = f"{major}.{minor}.{patch}"
+        else:
+            minor = pg_version % 10_000
+            version_string = f"{major}.{minor}"
         postgresql_version = Version(version_string)
 
         if postgresql_version not in specifier_set:
