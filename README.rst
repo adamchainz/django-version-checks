@@ -6,7 +6,7 @@ django-version-checks
    :target: https://github.com/adamchainz/django-version-checks/actions?workflow=CI
 
 .. image:: https://img.shields.io/coveralls/github/adamchainz/django-version-checks/master?style=for-the-badge
-   :target: https://coveralls.io/r/adamchainz/django-version-checks
+   :target: https://app.codecov.io/gh/adamchainz/django-version-checks
 
 .. image:: https://img.shields.io/pypi/v/django-version-checks.svg?style=for-the-badge
    :target: https://pypi.org/project/django-version-checks/
