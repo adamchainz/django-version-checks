@@ -2,10 +2,10 @@
 django-version-checks
 =====================
 
-.. image:: https://img.shields.io/github/workflow/status/adamchainz/django-version-checks/CI/master?style=for-the-badge
+.. image:: https://img.shields.io/github/workflow/status/adamchainz/django-version-checks/CI/main?style=for-the-badge
    :target: https://github.com/adamchainz/django-version-checks/actions?workflow=CI
 
-.. image:: https://img.shields.io/coveralls/github/adamchainz/django-version-checks/master?style=for-the-badge
+.. image:: https://img.shields.io/coveralls/github/adamchainz/django-version-checks/main?style=for-the-badge
    :target: https://app.codecov.io/gh/adamchainz/django-version-checks
 
 .. image:: https://img.shields.io/pypi/v/django-version-checks.svg?style=for-the-badge
