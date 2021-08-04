@@ -48,9 +48,9 @@ Second, add the app to your ``INSTALLED_APPS`` setting:
 .. code-block:: python
 
     INSTALLED_APPS = [
-        ...
+        ...,
         "django_version_checks",
-        ...
+        ...,
     ]
 
 Third, add a ``VERSION_CHECKS`` setting with the version checks you want to enforce (as documented below).
