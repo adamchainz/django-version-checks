@@ -1,16 +1,19 @@
 import sys
 from functools import wraps
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union, cast
 
 from django.conf import settings
 from django.core.checks import Error
 from django.db import connections
+from django.db.backends.base.base import BaseDatabaseWrapper
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
 from django_version_checks.compat import database_check
+from django_version_checks.typing import CheckFunc
 
 
-def check_config(**kwargs):
+def check_config(**kwargs: Any) -> List[Error]:
     errors = []
 
     if settings.is_overridden("VERSION_CHECKS"):
@@ -27,7 +30,7 @@ def check_config(**kwargs):
     return errors
 
 
-def get_config():
+def get_config() -> Dict[str, Union[str, Dict[str, str]]]:
     if not settings.is_overridden("VERSION_CHECKS"):
         return {}
     if isinstance(settings.VERSION_CHECKS, dict):
@@ -35,19 +38,17 @@ def get_config():
     return {}
 
 
-def bad_type_error(*, name, expected, value):
+def bad_type_error(*, name: str, expected: str, value: object) -> Error:
     label = "settings.VERSION_CHECKS"
     if name:
         label += f"[{name!r}]"
     return Error(
         id="dvc.E001",
-        msg=(
-            f"{label} is misconfigured. Expected a {expected} but got" + f" {value!r}."
-        ),
+        msg=f"{label} is misconfigured. Expected a {expected} but got {value!r}.",
     )
 
 
-def bad_specifier_error(*, name, value):
+def bad_specifier_error(*, name: str, value: object) -> Error:
     return Error(
         id="dvc.E002",
         msg=(
@@ -57,10 +58,10 @@ def bad_specifier_error(*, name, value):
     )
 
 
-def parse_specifier_str(*, name):
-    def decorator(func):
+def parse_specifier_str(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
+    def decorator(func: CheckFunc) -> CheckFunc:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> List[Error]:
             config = get_config()
             if name not in config:
                 return []
@@ -75,29 +76,29 @@ def parse_specifier_str(*, name):
 
             return func(specifier_set, *args, **kwargs)
 
-        return wrapper
+        return cast(CheckFunc, wrapper)
 
     return decorator
 
 
-class AnyDict:
-    def __init__(self, value):
+class AnyDict(Dict[str, str]):
+    def __init__(self, value: str) -> None:
         self.value = value
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> str:
         return self.value
 
 
-def parse_specifier_str_or_dict(*, name):
-    def decorator(func):
+def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
+    def decorator(func: CheckFunc) -> CheckFunc:
         @wraps(func)
-        def wrapper(*args, **kwargs):
-
+        def wrapper(*args: Any, **kwargs: Any) -> List[Error]:
             config = get_config()
             if name not in config:
                 return []
             specifiers = config[name]
 
+            specifier_dict: Dict[str, str]
             if isinstance(specifiers, str):
                 try:
                     specifier_set = SpecifierSet(specifiers)
@@ -127,19 +128,22 @@ def parse_specifier_str_or_dict(*, name):
 
             return func(specifier_dict, *args, **kwargs)
 
-        return wrapper
+        return cast(CheckFunc, wrapper)
 
     return decorator
 
 
-def db_connections_matching(databases, vendor):
+def db_connections_matching(
+    databases: Optional[List[str]],
+    vendor: str,
+) -> Generator[Tuple[str, BaseDatabaseWrapper], None, None]:
     if databases is None:
-        databases = set()
+        databases_set = set()
     else:
-        databases = set(databases)
+        databases_set = set(databases)
 
     for alias in connections:
-        if alias not in databases:
+        if alias not in databases_set:
             continue
         connection = connections[alias]
         if connection.vendor != vendor:
@@ -148,7 +152,7 @@ def db_connections_matching(databases, vendor):
 
 
 @parse_specifier_str(name="python")
-def check_python_version(specifier_set, **kwargs):
+def check_python_version(specifier_set: SpecifierSet, **kwargs: Any) -> List[Error]:
     errors = []
 
     version_string = (
@@ -172,7 +176,11 @@ def check_python_version(specifier_set, **kwargs):
 
 @database_check
 @parse_specifier_str_or_dict(name="postgresql")
-def check_postgresql_version(specifier_dict, databases, **kwargs):
+def check_postgresql_version(
+    specifier_dict: Dict[str, str],
+    databases: Optional[List[str]],
+    **kwargs: Any,
+) -> List[Error]:
     errors = []
     for alias, connection in db_connections_matching(databases, "postgresql"):
         try:
@@ -209,8 +217,11 @@ def check_postgresql_version(specifier_dict, databases, **kwargs):
 
 @database_check
 @parse_specifier_str_or_dict(name="mysql")
-def check_mysql_version(specifier_dict, databases, **kwargs):
-    errors = []
+def check_mysql_version(
+    specifier_dict: Dict[str, str],
+    databases: Optional[List[str]],
+    **kwargs: Any,
+) -> List[Error]:
     errors = []
     for alias, connection in db_connections_matching(databases, "mysql"):
         try:
@@ -238,7 +249,7 @@ def check_mysql_version(specifier_dict, databases, **kwargs):
 
 
 @parse_specifier_str(name="sqlite")
-def check_sqlite_version(specifier_set, **kwargs):
+def check_sqlite_version(specifier_set: SpecifierSet, **kwargs: Any) -> List[Error]:
     from sqlite3.dbapi2 import sqlite_version_info
 
     errors = []
