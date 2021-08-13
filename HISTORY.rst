@@ -2,6 +2,9 @@
 History
 =======
 
+1.2.0 (2021-08-13)
+------------------
+
 * Add type hints.
 
 * Stop distributing tests to reduce package size. Tests are not intended to be
