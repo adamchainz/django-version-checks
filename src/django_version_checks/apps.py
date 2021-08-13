@@ -8,7 +8,7 @@ class DjangoVersionChecksAppConfig(AppConfig):
     name = "django_version_checks"
     verbose_name = "django-version-checks"
 
-    def ready(self):
+    def ready(self) -> None:
         register(Tags.compatibility)(checks.check_config)
         register(Tags.compatibility)(checks.check_python_version)
         register(Tags.database)(checks.check_postgresql_version)
