@@ -13,3 +13,5 @@ TIME_ZONE = "UTC"
 INSTALLED_APPS = [
     "django_version_checks",
 ]
+
+USE_TZ = True
