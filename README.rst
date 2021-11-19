@@ -5,8 +5,8 @@ django-version-checks
 .. image:: https://img.shields.io/github/workflow/status/adamchainz/django-version-checks/CI/main?style=for-the-badge
    :target: https://github.com/adamchainz/django-version-checks/actions?workflow=CI
 
-.. image:: https://img.shields.io/codecov/c/github/adamchainz/django-version-checks/main?style=for-the-badge
-   :target: https://app.codecov.io/gh/adamchainz/django-version-checks
+.. image:: https://img.shields.io/badge/Coverage-100%25-success?style=for-the-badge
+   :target: https://github.com/adamchainz/django-version-checks/actions?workflow=CI
 
 .. image:: https://img.shields.io/pypi/v/django-version-checks.svg?style=for-the-badge
    :target: https://pypi.org/project/django-version-checks/
