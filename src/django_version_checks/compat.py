@@ -11,7 +11,6 @@ if django.VERSION >= (3, 1):
     def database_check(func: CheckFunc) -> CheckFunc:
         return func
 
-
 else:
 
     def database_check(func: CheckFunc) -> CheckFunc:
