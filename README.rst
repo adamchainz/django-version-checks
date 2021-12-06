@@ -170,7 +170,7 @@ This check compares the current version of SQLite to the given single specifier:
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "sqlite": "~=12.2",
+        "sqlite": "~=3.37",
     }
 
 Note: as a database check, Django will only run this during ``migrate`` or when using ``check --database`` (Django 3.1+) / ``check --tags database`` (Django <3.1).
