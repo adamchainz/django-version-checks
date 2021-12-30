@@ -188,7 +188,7 @@ def check_postgresql_version(
         except KeyError:
             continue
 
-        # See: https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION  # noqa: B950
+        # See: https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION  # noqa: E501
         pg_version = connection.pg_version
         major = (pg_version // 10_000) % 100
         if major < 10:
