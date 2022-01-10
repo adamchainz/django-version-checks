@@ -71,9 +71,8 @@ django-version-checks adds several `system checks <https://docs.djangoproject.co
 This is useful when coordinating upgrades across all your infrastructure.
 
 Note that django-version-checks does not check the versions of your Python dependencies.
-This is because such checks need doing at the start of the Python process, in your `manage.py` file, before Django imports your apps.
-Any mismatched versions are likely to cause import time problems, before django-version-checks’ system checks can execute.
-To add checks on your Python dependencies, check out `pip-lock <https://github.com/adamchainz/pip-lock/>`__.
+This is because mismatched dependency versions are likely to cause ``ImportError``\s or other import-time problems, before system checks run.
+To version check your Python dependencies, try `pip-lock <https://github.com/adamchainz/pip-lock/>`__.
 
 Checks use the `PEP 440 specifier format <https://www.python.org/dev/peps/pep-0440/#id53>`__ via the ``packaging`` module.
 This is the same format used by pip, and allows some flexibility in specifying valid version ranges.
@@ -99,7 +98,7 @@ The range can specified either as a single string:
         "mysql": "~=10.5.8",
     }
 
-...or as a dictionary mapping database aliases to their specifiers:
+…or as a dictionary mapping database aliases to their specifiers:
 
 .. code-block:: python
 
@@ -117,21 +116,6 @@ If this check fails, the system check will report:
 
 * ``dvc.E005``: The current version of MariaDB/MySQL (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).
 
-``python`` check
-----------------
-
-This check compares the current version of Python to the given single specifier:
-
-.. code-block:: python
-
-    VERSION_CHECKS = {
-        "python": "~=3.9.1",
-    }
-
-If this check fails, the system check will report:
-
-* ``dvc.E003``: The current version of Python (``<version>``) does not match the specified range (``<range>``).
-
 ``postgresql`` check
 --------------------
 
@@ -144,7 +128,7 @@ The range can specified either as a single string:
         "postgresql": "~=12.2",
     }
 
-...or as a dictionary mapping database aliases to their specifiers:
+…or as a dictionary mapping database aliases to their specifiers:
 
 .. code-block:: python
 
@@ -161,6 +145,21 @@ See (`docs <https://docs.djangoproject.com/en/3.1/ref/checks/#builtin-tags>`__).
 If this check fails, the system check will report:
 
 * ``dvc.E004``: The current version of PostgreSQL (``<version>``) for the ``<alias>`` database connection does not match the specified range (``<range>``).
+
+``python`` check
+----------------
+
+This check compares the current version of Python to the given single specifier:
+
+.. code-block:: python
+
+    VERSION_CHECKS = {
+        "python": "~=3.9.1",
+    }
+
+If this check fails, the system check will report:
+
+* ``dvc.E003``: The current version of Python (``<version>``) does not match the specified range (``<range>``).
 
 ``sqlite`` check
 --------------------
