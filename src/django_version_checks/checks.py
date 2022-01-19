@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union, cast
+from typing import Any, Callable, Dict, Generator, cast
 
 from django.conf import settings
 from django.core.checks import Error
@@ -13,7 +15,7 @@ from django_version_checks.compat import database_check
 from django_version_checks.typing import CheckFunc
 
 
-def check_config(**kwargs: Any) -> List[Error]:
+def check_config(**kwargs: Any) -> list[Error]:
     errors = []
 
     if settings.is_overridden("VERSION_CHECKS"):
@@ -30,7 +32,7 @@ def check_config(**kwargs: Any) -> List[Error]:
     return errors
 
 
-def get_config() -> Dict[str, Union[str, Dict[str, str]]]:
+def get_config() -> dict[str, str | dict[str, str]]:
     if not settings.is_overridden("VERSION_CHECKS"):
         return {}
     if isinstance(settings.VERSION_CHECKS, dict):
@@ -61,7 +63,7 @@ def bad_specifier_error(*, name: str, value: object) -> Error:
 def parse_specifier_str(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
     def decorator(func: CheckFunc) -> CheckFunc:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> List[Error]:
+        def wrapper(*args: Any, **kwargs: Any) -> list[Error]:
             config = get_config()
             if name not in config:
                 return []
@@ -92,13 +94,13 @@ class AnyDict(Dict[str, str]):
 def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
     def decorator(func: CheckFunc) -> CheckFunc:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> List[Error]:
+        def wrapper(*args: Any, **kwargs: Any) -> list[Error]:
             config = get_config()
             if name not in config:
                 return []
             specifiers = config[name]
 
-            specifier_dict: Dict[str, str]
+            specifier_dict: dict[str, str]
             if isinstance(specifiers, str):
                 try:
                     specifier_set = SpecifierSet(specifiers)
@@ -134,9 +136,9 @@ def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc
 
 
 def db_connections_matching(
-    databases: Optional[List[str]],
+    databases: list[str] | None,
     vendor: str,
-) -> Generator[Tuple[str, BaseDatabaseWrapper], None, None]:
+) -> Generator[tuple[str, BaseDatabaseWrapper], None, None]:
     if databases is None:
         databases_set = set()
     else:
@@ -152,7 +154,7 @@ def db_connections_matching(
 
 
 @parse_specifier_str(name="python")
-def check_python_version(specifier_set: SpecifierSet, **kwargs: Any) -> List[Error]:
+def check_python_version(specifier_set: SpecifierSet, **kwargs: Any) -> list[Error]:
     errors = []
 
     version_string = (
@@ -177,10 +179,10 @@ def check_python_version(specifier_set: SpecifierSet, **kwargs: Any) -> List[Err
 @database_check
 @parse_specifier_str_or_dict(name="postgresql")
 def check_postgresql_version(
-    specifier_dict: Dict[str, str],
-    databases: Optional[List[str]],
+    specifier_dict: dict[str, str],
+    databases: list[str] | None,
     **kwargs: Any,
-) -> List[Error]:
+) -> list[Error]:
     errors = []
     for alias, connection in db_connections_matching(databases, "postgresql"):
         try:
@@ -218,10 +220,10 @@ def check_postgresql_version(
 @database_check
 @parse_specifier_str_or_dict(name="mysql")
 def check_mysql_version(
-    specifier_dict: Dict[str, str],
-    databases: Optional[List[str]],
+    specifier_dict: dict[str, str],
+    databases: list[str] | None,
     **kwargs: Any,
-) -> List[Error]:
+) -> list[Error]:
     errors = []
     for alias, connection in db_connections_matching(databases, "mysql"):
         try:
@@ -249,7 +251,7 @@ def check_mysql_version(
 
 
 @parse_specifier_str(name="sqlite")
-def check_sqlite_version(specifier_set: SpecifierSet, **kwargs: Any) -> List[Error]:
+def check_sqlite_version(specifier_set: SpecifierSet, **kwargs: Any) -> list[Error]:
     from sqlite3.dbapi2 import sqlite_version_info
 
     errors = []
