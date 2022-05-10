@@ -11,7 +11,6 @@ from django.db.backends.base.base import BaseDatabaseWrapper
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
-from django_version_checks.compat import database_check
 from django_version_checks.typing import CheckFunc
 
 
@@ -176,7 +175,6 @@ def check_python_version(specifier_set: SpecifierSet, **kwargs: Any) -> list[Err
     return errors
 
 
-@database_check
 @parse_specifier_str_or_dict(name="postgresql")
 def check_postgresql_version(
     specifier_dict: dict[str, str],
@@ -217,7 +215,6 @@ def check_postgresql_version(
     return errors
 
 
-@database_check
 @parse_specifier_str_or_dict(name="mysql")
 def check_mysql_version(
     specifier_dict: dict[str, str],
