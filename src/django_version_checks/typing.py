@@ -1,5 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Callable, List
 
-CheckFunc = Callable[..., Any]
+from django.core.checks import CheckMessage
+
+CheckFunc = Callable[..., List[CheckMessage]]

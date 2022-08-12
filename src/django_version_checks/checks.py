@@ -5,7 +5,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Generator, cast
 
 from django.conf import settings
-from django.core.checks import Error
+from django.core.checks import CheckMessage, Error
 from django.db import connections
 from django.db.backends.base.base import BaseDatabaseWrapper
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
@@ -14,8 +14,8 @@ from packaging.version import Version
 from django_version_checks.typing import CheckFunc
 
 
-def check_config(**kwargs: Any) -> list[Error]:
-    errors = []
+def check_config(**kwargs: Any) -> list[CheckMessage]:
+    errors: list[CheckMessage] = []
 
     if settings.is_overridden("VERSION_CHECKS"):
         settings_dict = settings.VERSION_CHECKS
@@ -62,7 +62,7 @@ def bad_specifier_error(*, name: str, value: object) -> Error:
 def parse_specifier_str(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
     def decorator(func: CheckFunc) -> CheckFunc:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> list[Error]:
+        def wrapper(*args: Any, **kwargs: Any) -> list[CheckMessage]:
             config = get_config()
             if name not in config:
                 return []
@@ -93,7 +93,7 @@ class AnyDict(Dict[str, str]):
 def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
     def decorator(func: CheckFunc) -> CheckFunc:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> list[Error]:
+        def wrapper(*args: Any, **kwargs: Any) -> list[CheckMessage]:
             config = get_config()
             if name not in config:
                 return []
@@ -153,8 +153,10 @@ def db_connections_matching(
 
 
 @parse_specifier_str(name="python")
-def check_python_version(specifier_set: SpecifierSet, **kwargs: Any) -> list[Error]:
-    errors = []
+def check_python_version(
+    specifier_set: SpecifierSet, **kwargs: Any
+) -> list[CheckMessage]:
+    errors: list[CheckMessage] = []
 
     version_string = (
         f"{sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
@@ -180,8 +182,8 @@ def check_postgresql_version(
     specifier_dict: dict[str, str],
     databases: list[str] | None,
     **kwargs: Any,
-) -> list[Error]:
-    errors = []
+) -> list[CheckMessage]:
+    errors: list[CheckMessage] = []
     for alias, connection in db_connections_matching(databases, "postgresql"):
         try:
             specifier_set = specifier_dict[alias]
@@ -189,7 +191,7 @@ def check_postgresql_version(
             continue
 
         # See: https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION  # noqa: E501
-        pg_version = connection.pg_version
+        pg_version = connection.pg_version  # type: ignore [attr-defined]
         major = (pg_version // 10_000) % 100
         if major < 10:
             minor = (pg_version // 100) % 100
@@ -220,15 +222,17 @@ def check_mysql_version(
     specifier_dict: dict[str, str],
     databases: list[str] | None,
     **kwargs: Any,
-) -> list[Error]:
-    errors = []
+) -> list[CheckMessage]:
+    errors: list[CheckMessage] = []
     for alias, connection in db_connections_matching(databases, "mysql"):
         try:
             specifier_set = specifier_dict[alias]
         except KeyError:
             continue
 
-        version_string = ".".join(str(i) for i in connection.mysql_version)
+        version_string = ".".join(
+            str(i) for i in connection.mysql_version  # type: ignore [attr-defined]
+        )
         mysql_version = Version(version_string)
 
         if mysql_version not in specifier_set:
@@ -248,10 +252,12 @@ def check_mysql_version(
 
 
 @parse_specifier_str(name="sqlite")
-def check_sqlite_version(specifier_set: SpecifierSet, **kwargs: Any) -> list[Error]:
+def check_sqlite_version(
+    specifier_set: SpecifierSet, **kwargs: Any
+) -> list[CheckMessage]:
     from sqlite3.dbapi2 import sqlite_version_info
 
-    errors = []
+    errors: list[CheckMessage] = []
 
     version_string = ".".join(str(i) for i in sqlite_version_info)
     sqlite_version = Version(version_string)
