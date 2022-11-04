@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, Generator, cast
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import Dict
+from typing import Generator
 
 from django.conf import settings
-from django.core.checks import CheckMessage, Error
+from django.core.checks import CheckMessage
+from django.core.checks import Error
 from django.db import connections
 from django.db.backends.base.base import BaseDatabaseWrapper
-from packaging.specifiers import InvalidSpecifier, SpecifierSet
+from packaging.specifiers import InvalidSpecifier
+from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 from django_version_checks.typing import CheckFunc
