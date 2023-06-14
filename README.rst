@@ -23,7 +23,7 @@ System checks for your project's environment.
 Requirements
 ============
 
-Python 3.7 to 3.11 supported.
+Python 3.7 to 3.12 supported.
 
 Django 3.2 to 4.2 supported.
 
