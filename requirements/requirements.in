@@ -1,4 +1,4 @@
-coverage
+coverage[toml]
 django
 packaging>=20.8
 pytest
