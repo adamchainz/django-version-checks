@@ -4,8 +4,8 @@ from contextlib import contextmanager
 from unittest import mock
 
 from django.db import connection
-from django.test import override_settings
 from django.test import SimpleTestCase
+from django.test import override_settings
 
 from django_version_checks import checks
 

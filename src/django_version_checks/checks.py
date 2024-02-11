@@ -4,9 +4,9 @@ import sys
 from functools import wraps
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Dict
 from typing import Generator
+from typing import cast
 
 from django.conf import settings
 from django.core.checks import CheckMessage
