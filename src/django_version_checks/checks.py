@@ -113,7 +113,7 @@ def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc
                     return [bad_specifier_error(name=name, value=specifiers)]
                 specifier_dict = AnyDict(specifier_set)
             elif (
-                isinstance(specifiers, dict)
+                isinstance(specifiers, dict)  # type: ignore [redundant-expr]
                 and all(isinstance(a, str) for a in specifiers.keys())
                 and all(isinstance(s, str) for s in specifiers.values())
             ):
