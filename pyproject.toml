@@ -8,11 +8,10 @@ requires = [
 name = "django-version-checks"
 version = "1.11.0"
 description = "System checks for your project's environment."
-readme = { file = "README.rst", content-type = "text/x-rst" }
+readme = "README.rst"
 keywords = [
   "Django",
 ]
-license = { text = "MIT" }
 authors = [
   { name = "Adam Johnson", email = "me@adamj.eu" },
 ]
