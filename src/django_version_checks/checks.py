@@ -143,7 +143,7 @@ def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc
 def db_connections_matching(
     databases: list[str] | None,
     vendor: str,
-) -> Generator[tuple[str, BaseDatabaseWrapper], None, None]:
+) -> Generator[tuple[str, BaseDatabaseWrapper]]:
     if databases is None:
         databases_set = set()
     else:
