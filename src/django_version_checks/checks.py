@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Generator
 from functools import wraps
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import Generator
 from typing import cast
 
 from django.conf import settings
@@ -88,7 +87,7 @@ def parse_specifier_str(*, name: str) -> Callable[[CheckFunc], CheckFunc]:
     return decorator
 
 
-class AnyDict(Dict[str, str]):
+class AnyDict(dict[str, str]):
     def __init__(self, value: str) -> None:
         self.value = value
 
