@@ -44,7 +44,6 @@ urls = { Changelog = "https://github.com/adamchainz/django-version-checks/blob/m
 [dependency-groups]
 test = [
   "coverage[toml]",
-  "django",
   "packaging>=20.8",
   "pytest",
   "pytest-django",
