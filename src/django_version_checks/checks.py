@@ -3,17 +3,13 @@ from __future__ import annotations
 import sys
 from collections.abc import Generator
 from functools import wraps
-from typing import Any
-from typing import Callable
-from typing import cast
+from typing import Any, Callable, cast
 
 from django.conf import settings
-from django.core.checks import CheckMessage
-from django.core.checks import Error
+from django.core.checks import CheckMessage, Error
 from django.db import connections
 from django.db.backends.base.base import BaseDatabaseWrapper
-from packaging.specifiers import InvalidSpecifier
-from packaging.specifiers import SpecifierSet
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
 
 from django_version_checks.typing import CheckFunc
@@ -113,7 +109,7 @@ def parse_specifier_str_or_dict(*, name: str) -> Callable[[CheckFunc], CheckFunc
                 specifier_dict = AnyDict(specifier_set)
             elif (
                 isinstance(specifiers, dict)  # type: ignore [redundant-expr]
-                and all(isinstance(a, str) for a in specifiers.keys())
+                and all(isinstance(a, str) for a in specifiers)
                 and all(isinstance(s, str) for s in specifiers.values())
             ):
                 specifier_dict = {}
@@ -236,7 +232,8 @@ def check_mysql_version(
             continue
 
         version_string = ".".join(
-            str(i) for i in connection.mysql_version  # type: ignore [attr-defined]
+            str(i)
+            for i in connection.mysql_version  # type: ignore [attr-defined]
         )
         mysql_version = Version(version_string)
 
