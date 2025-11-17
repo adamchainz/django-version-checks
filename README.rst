@@ -29,7 +29,7 @@ System checks for your project's environment.
 Requirements
 ============
 
-Python 3.9 to 3.14 supported.
+Python 3.10 to 3.14 supported.
 
 Django 4.2 to 6.0 supported.
 
@@ -58,7 +58,7 @@ For example:
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "python": "==3.9.*",
+        "python": "==3.14.*",
     }
 
 Usage
@@ -76,7 +76,7 @@ To version check your Python dependencies, try `pip-lock <https://github.com/ada
 Checks use the `PEP 440 specifier format <https://www.python.org/dev/peps/pep-0440/#id53>`__ via the ``packaging`` module.
 This is the same format used by pip, and allows some flexibility in specifying valid version ranges.
 The ``~=`` operator is particularly useful.
-For example, you can use ``~=3.9.1`` to mean “3.9.1+, but less than 3.10.0”, allowing environments to take on patch releases without changes, but nothing more.
+For example, you can use ``~=3.14.1`` to mean “3.14.1+, but less than 3.15.0”, allowing environments to take on patch releases without changes, but nothing more.
 
 The individual checks are documented below.
 Each occupies a key in the ``VERSION_CHECKS`` dictionary, and documents its supported types for specifiers.
@@ -153,7 +153,7 @@ This check compares the current version of Python to the given single specifier:
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "python": "~=3.9.1",
+        "python": "~=3.14.0",
     }
 
 If this check fails, the system check will report:
@@ -181,35 +181,35 @@ If this check fails, the system check will report:
 Example Upgrade
 ===============
 
-Let’s walk through using django-version-checks to upgrade Python from version 3.8 to 3.9.
+Let’s walk through using django-version-checks to upgrade Python from version 3.13 to 3.14.
 We have an infrastructure consisting of CI, staging, and production environments, and several developers’ development machines.
 
-First, we add a pre-existing check to ensure that all environments are on Python 3.8:
+First, we add a pre-existing check to ensure that all environments are on Python 3.13:
 
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "python": "~=3.8.6",
+        "python": "~=3.13.0",
     }
 
-Second, we rewrite the specifier to allow versions of Python 3.9:
+Second, we rewrite the specifier to allow versions of Python 3.14:
 
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "python": ">=3.8.6,<3.10.0",
+        "python": ">=3.13.0,<3.15.0",
     }
 
 Third, we upgrade our infrastructure.
 We’d probably upgrade in the order: CI, development environments, staging, production.
 Each environment should have an automated run of ``manage.py check``, as per the `Django deployment checklist <https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/>`__.
 
-Fourth, we change the specifier again to allow Python 3.9 only:
+Fourth, we change the specifier again to allow Python 3.14 only:
 
 .. code-block:: python
 
     VERSION_CHECKS = {
-        "python": "~=3.9.1",
+        "python": "~=3.14.0",
     }
 
 And we’re upgraded! 🎉

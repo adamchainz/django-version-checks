@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from functools import wraps
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from django.conf import settings
 from django.core.checks import CheckMessage, Error
